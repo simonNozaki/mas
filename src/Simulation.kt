@@ -5,6 +5,7 @@ import org.graphstream.graph.Graph
 import org.graphstream.graph.Node
 import org.graphstream.graph.implementations.SingleGraph
 import java.util.*
+import extention.ArrayExtension
 
 /**
  * シミュレーションクラス。
@@ -15,6 +16,12 @@ class Simulation(private var population: Int, private  var averageDegree: Int) {
 
     private var agents: MutableList<Agent> = mutableListOf()
     private var initialCooperator: Int = selectInitialCooperators(population)
+
+
+
+    init {
+
+    }
 
     /**
      * シミュレーションを実行するエージェントを生成します
@@ -124,16 +131,21 @@ class Simulation(private var population: Int, private  var averageDegree: Int) {
      * @param
      * @param
      * @param
+     * @return
      */
-    fun playGame(episode: Int, dg: Int, dr: Int): Unit {
+    fun playGame(episode: Int, dg: Int, dr: Int): Int {
         // -----------------------
-        // コンテキスト初期化
+        // 実行コンテキスト初期化
         // -----------------------
         this.initializeStrategy()
         var initialRatio: Int = countCooperators()
         var focals: MutableList<Int> = mutableListOf(initialRatio)
         var tmax: Int = 3000 // 最大試行回数
+        var convergedFocal: Int = 0 // 返却する、収束した対象のインデックス
 
+        // -----------------------
+        // 収束判定
+        // -----------------------
         println("/_/_/_/_/_/_/_/_/_ Episode:$episode, Dg:$dg, Dr:$dr, Time:0, Fc:${initialRatio.toFloat()} /_/_/_/_/_/_/_/_/_")
 
         for (t in 0..tmax) {
@@ -144,11 +156,35 @@ class Simulation(private var population: Int, private  var averageDegree: Int) {
 
             println("/_/_/_/_/_/_/_/_/_ Episode:$episode, Dg:$dg, Dr:$dr, Time:$t, Fc:${focal} /_/_/_/_/_/_/_/_/_")
 
+            if (t >= 100 && absolute(sum(focals - focal)/100 - focal) < 0.01 || t == tmax - 1) {
+                convergedFocal = sum(focals - focal) / 99
+                break
+            } else if (focal == 0 || focal == 1) {
+                convergedFocal = focal
+                break
+            }
 
+            println("/_/_/_/_/_/_/_/_/_ Episode:$episode, Dg:$dg, Dr:$dr, Time:$t, Fc:${focal} /_/_/_/_/_/_/_/_/_")
 
-            // if (t >= 100 || t == tmax - 1)
+        }
+        return convergedFocal
+
+    }
+
+    /**
+     * 指定の範囲でパラメータを動かし、エピソードを実行します.
+     */
+    fun executeEpisode(episode: Int): MutableList<Int> {
+
+        var result: MutableList<Int> = mutableListOf()
+
+        for (dr in 0..10) {
+            for (dg in 0..10) {
+                result.add(this.playGame(episode, dg, dr))
+            }
         }
 
+        return result
     }
 
     private fun sum(list: List<Int>): Int {
@@ -156,6 +192,11 @@ class Simulation(private var population: Int, private  var averageDegree: Int) {
         for (i in 0..list.size) result += i
 
         return result
+    }
+
+    private fun absolute(p: Int): Int {
+        if (p < 0) return p * -1
+        return p
     }
 
 }
